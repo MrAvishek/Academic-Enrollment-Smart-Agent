@@ -2,6 +2,9 @@ import os
 import cv2
 import numpy as np
 
+import threading
+import queue
+
 from ml.utils.face_detection import FaceDetector
 from ml.utils.embedding import FaceEmbedder
 
