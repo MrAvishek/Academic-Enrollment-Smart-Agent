@@ -1,0 +1,19 @@
+# --- Core Image Processing ---
+opencv-python         # For cv2 (image loading and processing)
+numpy                 # For array manipulation and distance calculations
+
+# --- Machine Learning / Face Detection ---
+mtcnn                 # For the Face Detection utility
+tensorflow            # Required backend for MTCNN and many embedding models
+# torch               # Alternative: Uncomment if your embedding model uses PyTorch
+
+# --- Backend & API (for the app/ folder) ---
+fastapi               # High-performance web framework
+uvicorn               # ASGI server to run FastAPI
+pydantic              # Data validation
+python-multipart      # To handle image uploads via API
+
+# --- Utilities ---
+python-dotenv         # To load your .env file configurations
+PyYAML                # To read your config/config.yaml file
+requests              # For any external API calls
