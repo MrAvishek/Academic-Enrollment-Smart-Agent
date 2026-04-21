@@ -7,6 +7,7 @@ import queue
 from datetime import datetime
 from ml.utils.face_detection import FaceDetector
 from ml.utils.embedding import FaceEmbedder
+from backend.app.db.attendance_repo import AttendanceRepository
 
 # Configuration
 DB_PATH = "data/embeddings/student_db.pkl"
@@ -105,7 +106,7 @@ def capture_frames(cap, frame_queue ):
             frame_queue.get()
         frame_queue.put(frame)
 
-def process_frames(frame_queue, result_queue, detector, embedder, student_db, logged_students):
+def process_frames(frame_queue, result_queue, detector, embedder, student_db, db_repo):
     while True:
         try:
             frame = frame_queue.get(timeout=1)
@@ -135,9 +136,17 @@ def process_frames(frame_queue, result_queue, detector, embedder, student_db, lo
                 label = f"{best_name} ({min_dist:.2f})"
                 color = (0, 255, 0)  # Green
 
-                if best_name not in logged_students:
-                    log_attendance(best_name)
-                    logged_students.add(best_name)
+                # --- AGENTIC DATABASE LOGGING ---
+                try:
+                    # Convert distance to a confidence percentage
+                    confidence = float(1 - min_dist)
+                    # The repo handles the 30-minute duplicate check internally!
+                    db_repo.log_presence(best_name, confidence)
+                except Exception as e:
+                    print(f"⚠️ Database Log Failed: {e}")
+            else:
+                label = "Unknown"
+                color = (0, 0, 255) 
 
         if not result_queue.full():
             result_queue.put((frame, label, color))
@@ -146,6 +155,9 @@ def process_frames(frame_queue, result_queue, detector, embedder, student_db, lo
 def run_realtime():
     detector = FaceDetector()
     embedder = FaceEmbedder()
+
+    # 1. Initialize the Database Repository Agent
+    db_repo = AttendanceRepository()
 
     if not os.path.exists(DB_PATH):
         print("❌ student_db.pkl not found")
@@ -164,8 +176,8 @@ def run_realtime():
     # Threads
     t1 = threading.Thread(target=capture_frames, args=(cap, frame_queue), daemon=True)
     t2 = threading.Thread(target=process_frames, args=(
-        frame_queue, result_queue, detector, embedder, student_db, logged_students
-    ), daemon=True)
+            frame_queue, result_queue, detector, embedder, student_db, db_repo
+        ), daemon=True)
 
     t1.start()
     t2.start()
